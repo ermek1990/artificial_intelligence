@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+import heapq
+
 
 # Used this class from stackoverflow to create custom OrderedDict with behavior of defaultdict
 class CustomDict(OrderedDict):
@@ -68,7 +70,7 @@ def func_get_line_from_file(file_obj, desired_line):
     return ''
 
 
-def func_create_traffic_line_list(file_obj, line_count):
+def func_create_lines_list(file_obj, line_count):
     traffic_list = list([])
     for lineNum in range(0, line_count):
         traffic_list.append(str.split(func_get_line_from_file(file_obj, 1)))
@@ -131,7 +133,54 @@ def func_dfs(nodes, start_node, goal_node):
     return output
 
 
-def func_astar(nodes, start_node, goal_node):
+def func_get_edge_cost(e_1, e_2, edge_set):
+    cost = 0
+    for edge in edge_set:
+        if edge[0] == e_1 and edge[1] == e_2:
+            cost = edge[2]
+            break
+    return cost
+
+
+def func_construct_path(path, node):
+    total_path = [node]
+    while node in path.keys():
+        node = path[node]
+        total_path.append([node])
+    total_path.reverse()
+    return total_path
+
+
+def func_astar(nodes, edges, h_values, start_node, goal_node):
+    output = ''
+    open_heap, open_set, evaluated_nodes, g_score, f_score, path_memo = [], set(), set(), {}, {}, {}
+    heapq.heappush(open_heap, (0, start_node))
+    open_set.add(start_node)
+    f_score[start_node] = h_values[start_node]
+    g_score[start_node] = 0
+    while not open_set == []:
+        current_node = heapq.heappop(open_heap)
+        if current_node[1] == goal_node:
+            output = func_construct_path(path_memo, current_node[1])
+            break
+        open_set.remove(current_node[1])
+        evaluated_nodes.add(current_node[1])
+        for neighbor_node in nodes[current_node[1]]:
+            if neighbor_node not in evaluated_nodes:
+                tentative_gscore = current_node[0] + int(func_get_edge_cost(current_node[1], neighbor_node, edges))
+                if neighbor_node not in open_set:
+                    open_set.add(neighbor_node)
+                elif tentative_gscore >= g_score[neighbor_node]:
+                    continue
+                heapq.heappush(open_heap, (tentative_gscore, neighbor_node))
+                g_score[neighbor_node] = tentative_gscore
+                f_score[neighbor_node] = tentative_gscore + h_values[neighbor_node]
+                path_memo[neighbor_node] = current_node[1]
+    return output
+
+
+# Breadth-first search is a special case of uniform-cost search
+def func_ucs(nodes, start_node, goal_node):
     output = ''
     path_memo, nodes_visited, node_q = [], [start_node], NodeQueue()
     node_q.put(nodes_visited)
@@ -151,10 +200,6 @@ def func_astar(nodes, start_node, goal_node):
             break
     return output
 
-
-def func_ucs(nodes, start_node, goal_node):
-    return ''
-
 file_name = 'input.txt'
 if not func_is_empty_file():
     func_print_file_content(file_name)
@@ -166,7 +211,7 @@ if not func_is_empty_file():
     if start_state == goal_state:
         output_data = start_state + ' 0'
     else:
-        line_list = func_create_traffic_line_list(file_inst, int(func_get_line_from_file(file_inst, 1).rstrip()))
+        line_list = func_create_lines_list(file_inst, int(func_get_line_from_file(file_inst, 1).rstrip()))
         print(line_list)
         if algo == 'BFS':
             node_dict = func_create_node_dict(line_list)
@@ -179,17 +224,19 @@ if not func_is_empty_file():
         elif algo == 'A*':
             node_dict = func_create_node_dict(line_list)
             print(node_dict)
-            sun_line_list = func_create_traffic_line_list(file_inst, int(func_get_line_from_file(file_inst, 1).rstrip()))
-            print(sun_line_list)
-            # output_data = func_astar(node_dict, start_state, goal_state)
+            heuristic_list = func_create_lines_list(file_inst, int(func_get_line_from_file(file_inst, 1).rstrip()))
+            heuristic_values = dict((x[0], (int(x[1]))) for x in heuristic_list[0:])
+            print(heuristic_list)
+            output_data = func_astar(node_dict, line_list, heuristic_values, start_state, goal_state)
+            print(output_data)
         elif algo == 'UCS':
             node_dict = func_create_node_dict(line_list)
             print(node_dict)
             func_ucs(node_dict, start_state, goal_state)
         else:
             print('The algorithm in the input file is incorrect.')
-    if output_data != '':
-        func_write_file(output_data)
-        func_print_file_content('output.txt')
+    # if output_data != '':
+    #     func_write_file(output_data)
+    #     func_print_file_content('output.txt')
 else:
     print('Something went wrong. Either the file is empty or corrupted.')
