@@ -142,13 +142,18 @@ def func_get_edge_cost(e_1, e_2, edge_set):
     return cost
 
 
-def func_construct_path(path, node):
-    total_path = [node]
+def func_construct_path(path, node, final_len):
+    total_path = [[node, final_len]]
     while node in path.keys():
-        node = path[node]
-        total_path.append([node])
+        instance = path[node]
+        node = instance[0]
+        distance = instance[1]
+        total_path.append([node, distance])
     total_path.reverse()
-    return total_path
+    output = ''
+    for i in range(0, len(total_path)):
+        output += total_path[i][0] + ' ' + str(total_path[i][1]) + '\n'
+    return output
 
 
 def func_astar(nodes, edges, h_values, start_node, goal_node):
@@ -158,10 +163,10 @@ def func_astar(nodes, edges, h_values, start_node, goal_node):
     open_set.add(start_node)
     f_score[start_node] = h_values[start_node]
     g_score[start_node] = 0
-    while not open_set == []:
+    while open_set:
         current_node = heapq.heappop(open_heap)
         if current_node[1] == goal_node:
-            output = func_construct_path(path_memo, current_node[1])
+            output = func_construct_path(path_memo, current_node[1], current_node[0])
             break
         open_set.remove(current_node[1])
         evaluated_nodes.add(current_node[1])
@@ -175,7 +180,7 @@ def func_astar(nodes, edges, h_values, start_node, goal_node):
                 heapq.heappush(open_heap, (tentative_gscore, neighbor_node))
                 g_score[neighbor_node] = tentative_gscore
                 f_score[neighbor_node] = tentative_gscore + h_values[neighbor_node]
-                path_memo[neighbor_node] = current_node[1]
+                path_memo[neighbor_node] = [current_node[1], g_score[current_node[1]]]
     return output
 
 
@@ -200,7 +205,7 @@ def func_ucs(nodes, start_node, goal_node):
             break
     return output
 
-file_name = 'input.txt'
+file_name = 'input2.txt'
 if not func_is_empty_file():
     func_print_file_content(file_name)
     file_inst = open(file_name, 'rU')
@@ -215,18 +220,14 @@ if not func_is_empty_file():
         print(line_list)
         if algo == 'BFS':
             node_dict = func_create_node_dict(line_list)
-            print(node_dict)
             output_data = func_bfs(node_dict, start_state, goal_state)
         elif algo == 'DFS':
             node_dict = func_create_node_dict(line_list)
-            print(node_dict)
             output_data = func_dfs(node_dict, start_state, goal_state)
         elif algo == 'A*':
             node_dict = func_create_node_dict(line_list)
-            print(node_dict)
             heuristic_list = func_create_lines_list(file_inst, int(func_get_line_from_file(file_inst, 1).rstrip()))
             heuristic_values = dict((x[0], (int(x[1]))) for x in heuristic_list[0:])
-            print(heuristic_list)
             output_data = func_astar(node_dict, line_list, heuristic_values, start_state, goal_state)
             print(output_data)
         elif algo == 'UCS':
