@@ -30,7 +30,10 @@ class NodeQueue:
         return not self.nodes
 
     def ext(self, node):
-        self.nodes.extend(node)
+        self.nodes.append(node)
+
+    def is_exist(self, node):
+        return node in self.nodes
 
 
 def func_is_empty_file():
@@ -120,19 +123,25 @@ def func_bfs(nodes, start_node, goal_node):
 
 def func_dfs(nodes, start_node, goal_node):
     # Reversing the order of lists in dictionary
-    for node_keys in nodes.keys():
-        nodes[node_keys].reverse()
+    for node_key in nodes.keys():
+        nodes[node_key].reverse()
     nodes_visited = []
     nodes_stack = NodeQueue()
     nodes_stack.ext(start_node)
     while not nodes_stack == []:
         node = nodes_stack.get()
-        if node == goal_node:
-            nodes_visited.append(node)
-            break
-        if node not in nodes_visited:
-            nodes_visited = nodes_visited + [node]
-            nodes_stack.ext(n for n in nodes[node] if n not in nodes_visited)
+        if not nodes_stack.is_exist(node):
+            if node == goal_node:
+                nodes_visited.append(node)
+                break
+            if node not in nodes_visited:
+                nodes_visited = nodes_visited + [node]
+                temp = [n for n in nodes[node] if n not in nodes_visited]
+                for i in range(0, len(temp)):
+                    if not nodes_stack.is_exist(node):
+                        nodes_stack.ext(temp[i])
+                    else:
+                        # delete something
     output = ''
     for i in range(0, len(nodes_visited)):
         output += nodes_visited[i] + ' ' + str(i) + '\n'
@@ -162,13 +171,14 @@ def func_construct_path_astar(path, node, final_len):
     return output
 
 
-def func_construct_path_ucs(path, goal_node):
+def func_construct_path_ucs(path, start_node, goal_node):
     total_path = []
+    node = goal_node
     while node in path.keys():
         instance = path[node]
+        total_path.append([node, instance[1]])
         node = instance[0]
-        distance = instance[1]
-        total_path.append([node, distance])
+    total_path.append([start_node, 0])
     total_path.reverse()
     output = ''
     for i in range(0, len(total_path)):
@@ -188,7 +198,7 @@ def func_astar(nodes, edge_costs, h_values, start_node, goal_node):
         if current_node[1] == goal_node:
             output = func_construct_path_astar(path_memo, current_node[1], current_node[0])
             break
-        open_set.remove(current_node[1])
+        open_set.discard(current_node[1])
         evaluated_nodes.add(current_node[1])
         for neighbor_node in nodes[current_node[1]]:
             if neighbor_node not in evaluated_nodes:
@@ -209,21 +219,21 @@ def func_ucs(nodes, edge_costs, start_node, goal_node):
     node_q.put((0, start_node))
     while not node_q.empty():
         edge_cost, current_node = node_q.get()
-        if current_node not in nodes_visited:
-            nodes_visited.append(current_node)
-            if current_node == goal_node:
-                output = func_construct_path_ucs(path_memo, current_node)
-                break
-            for neighbor_node in nodes[current_node]:
+        if current_node == goal_node:
+            output = func_construct_path_ucs(path_memo, start_node, current_node)
+            break
+        for neighbor_node in nodes[current_node]:
+            if neighbor_node not in nodes_visited:
+                nodes_visited.append(neighbor_node)
                 total_node_cost = int(func_get_edge_cost(current_node, neighbor_node, edge_costs)) + edge_cost
                 node_q.put((total_node_cost, neighbor_node))
-                path_memo[current_node] = [neighbor_node, total_node_cost]
+                path_memo[neighbor_node] = [current_node, total_node_cost]
     return output
 
 
-file_name = 'input6.txt'
+file_name = 'input11.txt'
 if not func_is_empty_file():
-    func_print_file_content(file_name)
+    # func_print_file_content(file_name)
     file_inst = open(file_name, 'rU')
     algo = func_get_line_from_file(file_inst, 1).rstrip()
     start_state = func_get_line_from_file(file_inst, 1).rstrip()
@@ -233,7 +243,7 @@ if not func_is_empty_file():
         output_data = start_state + ' 0'
     else:
         line_list = func_create_lines_list(file_inst, int(func_get_line_from_file(file_inst, 1).rstrip()))
-        print(line_list)
+        # print(line_list)
         if algo == 'BFS':
             node_dict = func_create_node_dict(line_list)
             output_data = func_bfs(node_dict, start_state, goal_state)
@@ -248,11 +258,10 @@ if not func_is_empty_file():
         elif algo == 'UCS':
             node_dict = func_create_node_dict(line_list)
             output_data = func_ucs(node_dict, line_list, start_state, goal_state)
-            print(output_data)
         else:
             print('The algorithm in the input file is incorrect.')
-    # if output_data != '':
-    #     func_write_file(output_data)
-    #     func_print_file_content('output.txt')
+    if output_data != '':
+        func_write_file(output_data)
+        func_print_file_content('output.txt')
 else:
     print('Something went wrong. Either the file is empty or corrupted.')
