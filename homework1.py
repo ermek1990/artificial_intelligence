@@ -35,6 +35,9 @@ class NodeQueue:
     def is_exist(self, node):
         return node in self.nodes
 
+    def next_node(self):
+        return self.nodes[len(self.nodes) - 1]
+
 
 def func_is_empty_file():
     try:
@@ -138,10 +141,10 @@ def func_dfs(nodes, start_node, goal_node):
                 nodes_visited = nodes_visited + [node]
                 temp = [n for n in nodes[node] if n not in nodes_visited]
                 for i in range(0, len(temp)):
-                    if not nodes_stack.is_exist(node):
+                    if not nodes_stack.is_exist(temp[i]):
                         nodes_stack.ext(temp[i])
                     else:
-                        # delete something
+                        print('Loop detected at node ', temp[i])
     output = ''
     for i in range(0, len(nodes_visited)):
         output += nodes_visited[i] + ' ' + str(i) + '\n'
