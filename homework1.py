@@ -42,11 +42,12 @@ class NodeQueue:
 def func_is_empty_file():
     try:
         file_obj = open(file_name)
+        input_d = ''
         try:
-            input_data = file_obj.read()
+            input_d = file_obj.read()
         finally:
             file_obj.close()
-            return input_data == ''
+            return input_d == ''
     except IOError:
         print('The file does not exist.')
 
@@ -124,31 +125,38 @@ def func_bfs(nodes, start_node, goal_node):
     return output
 
 
+def func_print_dfs(parents_set, start_node, goal_node):
+    total_path = [goal_node]
+    node = goal_node
+    while node != start_node:
+        total_path.append(parents_set[node])
+        node = parents_set[node]
+    total_path.reverse()
+    output = ''
+    for i in range(0, len(total_path)):
+        output += total_path[i] + ' ' + str(i) + '\n'
+    return output
+
+
 def func_dfs(nodes, start_node, goal_node):
-    # Reversing the order of lists in dictionary
     for node_key in nodes.keys():
         nodes[node_key].reverse()
     nodes_visited = []
     nodes_stack = NodeQueue()
     nodes_stack.ext(start_node)
-    while not nodes_stack == []:
+    parents = {start_node: ''}
+    while not nodes_stack.empty():
         node = nodes_stack.get()
         if not nodes_stack.is_exist(node):
-            if node == goal_node:
-                nodes_visited.append(node)
-                break
             if node not in nodes_visited:
                 nodes_visited = nodes_visited + [node]
                 temp = [n for n in nodes[node] if n not in nodes_visited]
                 for i in range(0, len(temp)):
                     if not nodes_stack.is_exist(temp[i]):
+                        parents[temp[i]] = node
+                        if temp[i] == goal_node:
+                            return func_print_dfs(parents, start_node, goal_node)
                         nodes_stack.ext(temp[i])
-                    else:
-                        print('Loop detected at node ', temp[i])
-    output = ''
-    for i in range(0, len(nodes_visited)):
-        output += nodes_visited[i] + ' ' + str(i) + '\n'
-    return output
 
 
 def func_get_edge_cost(e_1, e_2, edge_set):
@@ -234,7 +242,7 @@ def func_ucs(nodes, edge_costs, start_node, goal_node):
     return output
 
 
-file_name = 'input11.txt'
+file_name = 'input.txt'
 if not func_is_empty_file():
     # func_print_file_content(file_name)
     file_inst = open(file_name, 'rU')
@@ -246,7 +254,6 @@ if not func_is_empty_file():
         output_data = start_state + ' 0'
     else:
         line_list = func_create_lines_list(file_inst, int(func_get_line_from_file(file_inst, 1).rstrip()))
-        # print(line_list)
         if algo == 'BFS':
             node_dict = func_create_node_dict(line_list)
             output_data = func_bfs(node_dict, start_state, goal_state)
