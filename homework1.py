@@ -4,9 +4,9 @@ import heapq
 
 # Took this import code from www.bogotobogo.com
 try:
-    import Queue as Q
+    from Queue import PriorityQueue
 except ImportError:
-    import queue as Q
+    from queue import PriorityQueue
 
 
 # Used this class from stackoverflow to create custom OrderedDict with behavior of defaultdict
@@ -200,36 +200,44 @@ def func_construct_path_ucs(path, start_node, goal_node):
 def func_astar(nodes, edge_costs, h_values, start_node, goal_node):
     output = ''
     open_heap, open_set, evaluated_nodes, g_score, f_score, path_memo = [], set(), set(), {}, {}, {}
-    heapq.heappush(open_heap, (0, start_node))
+    node_d = {0: start_node}
+    n_counter = 1
+    heapq.heappush(open_heap, (0, 0))
     open_set.add(start_node)
     f_score[start_node] = h_values[start_node]
     g_score[start_node] = 0
     while open_set:
-        current_node = heapq.heappop(open_heap)
-        if current_node[1] == goal_node:
-            output = func_construct_path_astar(path_memo, current_node[1], current_node[0])
+        current_value, current_node_d = heapq.heappop(open_heap)
+        current_node = node_d[current_node_d]
+        if current_node == goal_node:
+            output = func_construct_path_astar(path_memo, current_node, current_value)
             break
-        open_set.discard(current_node[1])
-        evaluated_nodes.add(current_node[1])
-        for neighbor_node in nodes[current_node[1]]:
+        open_set.discard(current_node)
+        evaluated_nodes.add(current_node)
+        for neighbor_node in nodes[current_node]:
             if neighbor_node not in evaluated_nodes:
-                tentative_gscore = current_node[0] + int(func_get_edge_cost(current_node[1], neighbor_node, edge_costs))
+                tentative_gscore = current_value + int(func_get_edge_cost(current_node, neighbor_node, edge_costs))
                 if neighbor_node not in open_set:
                     open_set.add(neighbor_node)
                 elif tentative_gscore >= g_score[neighbor_node]:
                     continue
-                heapq.heappush(open_heap, (tentative_gscore, neighbor_node))
+                heapq.heappush(open_heap, (tentative_gscore, n_counter))
+                node_d[n_counter] = neighbor_node
+                n_counter += 1
                 g_score[neighbor_node] = tentative_gscore
                 f_score[neighbor_node] = tentative_gscore + h_values[neighbor_node]
-                path_memo[neighbor_node] = [current_node[1], g_score[current_node[1]]]
+                path_memo[neighbor_node] = [current_node, g_score[current_node]]
     return output
 
 
 def func_ucs(nodes, edge_costs, start_node, goal_node):
-    output, nodes_visited, node_q, path_memo = '', [], Q.PriorityQueue(), {}
-    node_q.put((0, start_node))
+    output, nodes_visited, node_q, path_memo = '', [], PriorityQueue(), {}
+    node_q.put((0, 0))
+    node_d = {0: start_node}
+    n_counter = 1
     while not node_q.empty():
-        edge_cost, current_node = node_q.get()
+        edge_cost, current_node_d = node_q.get()
+        current_node = node_d[current_node_d]
         if current_node == goal_node:
             output = func_construct_path_ucs(path_memo, start_node, current_node)
             break
@@ -237,7 +245,9 @@ def func_ucs(nodes, edge_costs, start_node, goal_node):
             if neighbor_node not in nodes_visited:
                 nodes_visited.append(neighbor_node)
                 total_node_cost = int(func_get_edge_cost(current_node, neighbor_node, edge_costs)) + edge_cost
-                node_q.put((total_node_cost, neighbor_node))
+                node_q.put((total_node_cost, n_counter))
+                node_d[n_counter] = neighbor_node
+                n_counter += 1
                 path_memo[neighbor_node] = [current_node, total_node_cost]
     return output
 
